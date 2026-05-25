@@ -1,0 +1,139 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  username     String        @unique
+  email        String        @unique
+  password     String
+  role         String        @default("USER") // ADMIN, CREATOR, USER
+  name         String?
+  bio          String?
+  profileImage String?
+  coverImage   String?
+  createdAt    DateTime      @default(now())
+  
+  posts        ShayariPost[]
+  blogs        Blog[]
+  comments     Comment[]
+  likes        Like[]
+  savedPosts   SavedPost[]
+  notifications Notification[]
+  
+  // Follow relations
+  followers    Follow[]      @relation("Following")
+  following    Follow[]      @relation("Follower")
+  
+  // Message relations
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+}
+
+model ShayariPost {
+  id         String      @id @default(uuid())
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String?
+  text       String
+  mood       String      // LOVE, SAD, ANGRY, HAPPY, ALONE, MOTIVATION, FRIENDSHIP
+  audioUrl   String?
+  imageUrl   String?
+  watermark  String?
+  createdAt  DateTime    @default(now())
+  
+  likes      Like[]
+  comments   Comment[]
+  savedPosts SavedPost[]
+}
+
+model Blog {
+  id         String      @id @default(uuid())
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  content    String
+  summary    String?
+  tags       String?     // Comma separated tags
+  thumbnail  String?
+  status     String      @default("PUBLISHED") // DRAFT, PUBLISHED
+  createdAt  DateTime    @default(now())
+  
+  likes      Like[]
+  comments   Comment[]
+  savedPosts SavedPost[]
+}
+
+model Comment {
+  id            String       @id @default(uuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shayariPostId String?
+  shayariPost   ShayariPost? @relation(fields: [shayariPostId], references: [id], onDelete: Cascade)
+  blogId        String?
+  blog          Blog?        @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  text          String
+  createdAt     DateTime     @default(now())
+}
+
+model Like {
+  id            String       @id @default(uuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shayariPostId String?
+  shayariPost   ShayariPost? @relation(fields: [shayariPostId], references: [id], onDelete: Cascade)
+  blogId        String?
+  blog          Blog?        @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  createdAt     DateTime     @default(now())
+  
+  @@unique([userId, shayariPostId, blogId])
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String
+  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+}
+
+model SavedPost {
+  id            String       @id @default(uuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shayariPostId String?
+  shayariPost   ShayariPost? @relation(fields: [shayariPostId], references: [id], onDelete: Cascade)
+  blogId        String?
+  blog          Blog?        @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  createdAt     DateTime     @default(now())
+
+  @@unique([userId, shayariPostId, blogId])
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  senderId   String
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  content    String
+  createdAt  DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // LIKE, COMMENT, FOLLOW, MESSAGE, GENERAL
+  content   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
