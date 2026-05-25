@@ -4,6 +4,8 @@ import { signToken, getCurrentUser } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 
+export const runtime = 'nodejs';
+
 // GET /api/auth -> Get current user
 export async function GET() {
   const user = await getCurrentUser();
